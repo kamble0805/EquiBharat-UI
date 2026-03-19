@@ -19,7 +19,7 @@ const navLinks = [
 ];
 
 export function Navbar() {
-  const { isLoggedIn, logout, user, isAdmin } = useAuth();
+  const { isLoggedIn, logout, user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -107,14 +107,6 @@ export function Navbar() {
               <div className="flex items-center gap-2 pl-2">
                 {isLoggedIn ? (
                   <div className="flex items-center gap-2">
-                    {isAdmin && (
-                      <Link href="/admin">
-                        <button className="hover:text-white flex items-center gap-1.5 border border-violet-500/40 px-2 py-1 rounded-full bg-violet-500/10 text-violet-300 transition-all" title="Admin Panel">
-                          <Shield className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline-block text-xs font-medium">Admin</span>
-                        </button>
-                      </Link>
-                    )}
                     <Link href="/profile">
                       <button className="hover:text-white flex items-center gap-1.5 border border-white/10 px-2 py-1 rounded-full bg-white/5 transition-all">
                         <span className="max-w-[80px] truncate hidden sm:inline-block font-medium">
@@ -257,11 +249,6 @@ export function Navbar() {
                         <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
                       </div>
                     </div>
-                    {isAdmin && (
-                      <Button asChild variant="outline" className="w-full border-violet-500/40 text-violet-400 hover:bg-violet-500/10" onClick={() => setMobileMenuOpen(false)}>
-                        <Link href="/admin"><Shield className="w-4 h-4 mr-2" />Admin Panel</Link>
-                      </Button>
-                    )}
                     <Button asChild variant="outline" className="w-full" onClick={() => setMobileMenuOpen(false)}>
                       <Link href="/profile">My Profile</Link>
                     </Button>

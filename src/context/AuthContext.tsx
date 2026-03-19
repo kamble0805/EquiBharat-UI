@@ -8,12 +8,11 @@ interface UserData {
     username?: string;
     email: string;
     phone?: string;
-    role?: 'user' | 'admin';
+    role?: 'user';
 }
 
 interface AuthContextType {
     isLoggedIn: boolean;
-    isAdmin: boolean;
     user: UserData | null;
     login: (userData: UserData) => void;
     logout: () => void;
@@ -75,10 +74,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const openAuthModal = () => setIsAuthModalOpen(true);
     const closeAuthModal = () => setIsAuthModalOpen(false);
 
-    const isAdmin = isLoggedIn && user?.role === 'admin';
 
     return (
-        <AuthContext.Provider value={{ isLoggedIn, isAdmin, user, login, logout, updateUser, isAuthModalOpen, openAuthModal, closeAuthModal }}>
+        <AuthContext.Provider value={{ isLoggedIn, user, login, logout, updateUser, isAuthModalOpen, openAuthModal, closeAuthModal }}>
             {children}
         </AuthContext.Provider>
     );
