@@ -15,6 +15,7 @@ const navLinks = [
   { path: '/', label: 'Home' },
   { path: '/calendar', label: 'Economic Calendar' },
   { path: '/news', label: 'News' },
+  { path: '/market-pulse', label: 'Market Pulse' },
   { path: '/forums', label: 'Forums' },
 ];
 

@@ -9,7 +9,6 @@ import { format, subDays, addDays, isSameDay } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { MarketChart } from '@/components/charts/MarketChart';
 
 type FocusTab = 'equity' | 'currency' | 'commodities';
 
@@ -151,60 +150,11 @@ const MarketPulsePage = () => {
               </div>
             </div>
 
-            {/* Focus Tabs */}
-            <div className="bg-card border border-border shadow-card rounded-xl overflow-hidden">
-              <div className="flex border-b border-border">
-                <button
-                  onClick={() => setActiveTab('equity')}
-                  className={cn(
-                    'flex-1 px-4 py-4 text-sm font-medium border-b-2 transition-all hover:bg-muted/50',
-                    activeTab === 'equity'
-                      ? 'border-primary text-primary bg-primary/5'
-                      : 'border-transparent text-muted-foreground'
-                  )}
-                >
-                  <span className="block text-xs uppercase tracking-wider mb-1 opacity-70">Equity Focus</span>
-                  <span className={cn("text-base", activeTab === 'equity' ? 'font-bold' : '')}>{data.equityFocus}</span>
-                </button>
-                <div className="w-[1px] bg-border my-2" />
-                <button
-                  onClick={() => setActiveTab('currency')}
-                  className={cn(
-                    'flex-1 px-4 py-4 text-sm font-medium border-b-2 transition-all hover:bg-muted/50',
-                    activeTab === 'currency'
-                      ? 'border-primary text-primary bg-primary/5'
-                      : 'border-transparent text-muted-foreground'
-                  )}
-                >
-                  <span className="block text-xs uppercase tracking-wider mb-1 opacity-70">Currency</span>
-                  <span className={cn("text-base", activeTab === 'currency' ? 'font-bold' : '')}>{data.currencyFocus}</span>
-                </button>
-                <div className="w-[1px] bg-border my-2" />
-                <button
-                  onClick={() => setActiveTab('commodities')}
-                  className={cn(
-                    'flex-1 px-4 py-4 text-sm font-medium border-b-2 transition-all hover:bg-muted/50',
-                    activeTab === 'commodities'
-                      ? 'border-primary text-primary bg-primary/5'
-                      : 'border-transparent text-muted-foreground'
-                  )}
-                >
-                  <span className="block text-xs uppercase tracking-wider mb-1 opacity-70">Commodities</span>
-                  <span className={cn("text-base", activeTab === 'commodities' ? 'font-bold' : '')}>{data.commoditiesFocus}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Market Analysis Chart */}
-            <div className="widget-card bg-card border border-border shadow-card rounded-xl overflow-hidden h-[650px] transition-all hover:shadow-lg flex flex-col">
-              <div className="p-6 pb-2">
-                <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-primary" />
-                  Live Market Analysis
-                </h3>
-              </div>
-              <div className="flex-grow w-full border-t border-border mt-auto">
-                <MarketChart />
+            {/* Market Focus Section - Simplified to only Equity */}
+            <div className="bg-card border border-border shadow-card rounded-xl overflow-hidden p-6">
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-black uppercase tracking-[0.2em] text-primary/70">Equity Focus: NIFTY 50</span>
+                <span className="text-xl font-bold text-foreground leading-relaxed">{data.equityFocus}</span>
               </div>
             </div>
           </div>

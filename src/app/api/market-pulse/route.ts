@@ -24,10 +24,7 @@ export async function GET() {
                 { id: '2', title: 'Stable Oil Prices', description: 'Brent hovering near $80 supporting inflation control.', impact: 'positive' }
             ],
             snapshot: [
-                { name: 'NIFTY 50', value: '25,123.40', change: 0.85, direction: 'up' },
-                { name: 'BANK NIFTY', value: '52,430.15', change: 1.12, direction: 'up' },
-                { name: 'SENSEX', value: '82,345.60', change: 0.78, direction: 'up' },
-                { name: 'USDINR', value: '83.92', change: -0.05, direction: 'down' }
+                { name: 'NIFTY 50 INDEX NSE', value: '25,123.40', change: 0.85, direction: 'up' },
             ],
             equityFocus: 'Large-cap banks and FMCG are showing resilience.',
             riskFlags: [
