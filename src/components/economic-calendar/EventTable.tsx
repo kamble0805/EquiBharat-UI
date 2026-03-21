@@ -154,7 +154,7 @@ const EventDetail = ({ event }: { event: EconomicEvent }) => {
 // Mobile View component
 const MobileEventCard = ({ event }: { event: EconomicEvent }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const time = new Date(event.published_date).toLocaleTimeString('en-IN', {
+  const time = event.source === 'Market Holiday' ? 'All Day' : new Date(event.published_date).toLocaleTimeString('en-IN', {
     timeZone: 'Asia/Kolkata',
     hour: '2-digit',
     minute: '2-digit',
@@ -169,7 +169,7 @@ const MobileEventCard = ({ event }: { event: EconomicEvent }) => {
       >
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-mono font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md">
+            <span className="text-[10px] font-mono font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md uppercase">
               {time}
             </span>
             <Badge variant="outline" className="text-xs font-medium bg-background">
@@ -220,7 +220,7 @@ const MobileEventCard = ({ event }: { event: EconomicEvent }) => {
 // Desktop Row component
 const DesktopEventRow = ({ event }: { event: EconomicEvent }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const time = new Date(event.published_date).toLocaleTimeString('en-IN', {
+  const time = event.source === 'Market Holiday' ? 'All Day' : new Date(event.published_date).toLocaleTimeString('en-IN', {
     timeZone: 'Asia/Kolkata',
     hour: '2-digit',
     minute: '2-digit',
@@ -237,7 +237,7 @@ const DesktopEventRow = ({ event }: { event: EconomicEvent }) => {
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <td className="py-4 px-6">
-          <span className="font-mono text-xs sm:text-sm font-medium text-muted-foreground/80 bg-muted/30 px-2 py-1 rounded border border-border/50 group-hover:border-primary/20 transition-colors">
+          <span className="font-mono text-[10px] sm:text-xs font-medium text-muted-foreground/80 bg-muted/30 px-2 py-1 rounded border border-border/50 group-hover:border-primary/20 transition-colors uppercase">
             {time}
           </span>
         </td>

@@ -51,28 +51,30 @@ export interface RiskFlag {
 }
 
 export interface MarketPulseData {
-    date: string;
-    globalMood: {
-        status: string;
-        direction: 'up' | 'down' | 'neutral';
-    };
-    indiaBias: string;
-    volatility: string;
-    liquidity: string;
-    triggers: MarketTrigger[];
-    snapshot: MarketSnapshot[];
-    equityFocus: string;
-    currencyFocus: string;
-    commoditiesFocus: string;
-    scheduledEvents: ScheduledEvent[];
-    calendarEvents: {
-        time: string;
-        event: string;
-        impact: 'extreme' | 'high' | 'moderate' | 'medium' | 'low';
-    }[];
-    changedSinceYesterday: MarketChange[];
-    riskFlags: RiskFlag[];
+  pulse: {
+    global_mood: 'Bullish' | 'Bearish' | 'Neutral';
+    india_bias: 'Positive' | 'Cautionary' | 'Stable';
+    summary: string;
+    top_triggers: string; // JSON string containing a list of strings
+    volatility_state: string;
+    liquidity_state: string;
+  };
+  sectors: {
+    sector: string;
+    score: number;
+    total_signals: number;
+  }[];
+  events: {
+    event_name: string;
+    impact_level: 'High' | 'Moderate' | 'Low';
+    country: string;
+    event_time: string;
+    actual_value?: string;
+    expected_value?: string;
+    previous_value?: string;
+  }[];
 }
+
 
 export interface ForumTopic {
     id: string;

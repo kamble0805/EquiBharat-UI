@@ -54,24 +54,68 @@ export async function GET() {
             LIMIT 100
         `);
 
-        const events = rows.map((row: any) => ({
-            id: row.event_id.toString(),
-            raw_news_id: row.raw_news_id.toString(),
-            title: row.title,
-            source: row.source,
-            category: row.category || 'General',
-            summary: row.summary || '',
-            // USE THE RAW IMPACT FROM news_events
-            impact_level: (row.raw_impact || 'low').toLowerCase(),
-            impact_direction: mapDirection(row.impact_direction),
-            likely_affected_indices: parseArrayField(row.likely_affected_indices),
-            likely_affected_sectors: parseArrayField(row.likely_affected_sectors),
-            keywords: parseArrayField(row.keywords),
-            published_date: row.published_date,
-            explanation: row.market_impact_explanation
-        }));
+        const events = rows.map((row: any) => {
+            const impact = (row.raw_impact || 'low').toLowerCase();
+            return {
+                id: row.event_id.toString(),
+                raw_news_id: row.raw_news_id.toString(),
+                title: row.title,
+                source: row.source,
+                category: row.category || 'General',
+                summary: row.summary || '',
+                simple_summary: row.summary || '',
+                impact_level: impact,
+                overall_impact_level: impact,
+                impact_direction: mapDirection(row.impact_direction),
+                likely_affected_indices: parseArrayField(row.likely_affected_indices),
+                likely_affected_sectors: parseArrayField(row.likely_affected_sectors),
+                keywords: parseArrayField(row.keywords),
+                published_date: row.published_date,
+                explanation: row.market_impact_explanation
+            };
+        });
 
-        return NextResponse.json(events);
+        // 3. Fetch holidays from the 'holidays' table if it exists
+        const [holidayTableRes]: any = await pool.query(`
+            SHOW TABLES LIKE 'holidays'
+        `);
+        
+        let holidayEvents: any[] = [];
+        if (holidayTableRes.length > 0) {
+            const [holidayRows]: any = await pool.query(`
+                SELECT 
+                    id, 
+                    name, 
+                    date, 
+                    type 
+                FROM holidays 
+                ORDER BY date ASC
+            `);
+
+            holidayEvents = holidayRows.map((h: any) => ({
+                id: `holiday-${h.id}`,
+                raw_news_id: `h-${h.id}`,
+                title: h.name,
+                source: 'Market Holiday',
+                category: h.type || 'Holiday',
+                summary: `${h.name} - Market Closed`,
+                simple_summary: `${h.name} - Market Closed`,
+                impact_level: 'moderate',
+                overall_impact_level: 'moderate',
+                impact_direction: 'neutral',
+                likely_affected_indices: [],
+                likely_affected_sectors: [],
+                keywords: ['holiday', 'india'],
+                published_date: h.date,
+                explanation: `Exchange holiday observed in India.`
+            }));
+        }
+
+        // Combine and sorta by date
+        const combinedEvents = [...events, ...holidayEvents];
+        combinedEvents.sort((a, b) => new Date(b.published_date).getTime() - new Date(a.published_date).getTime());
+
+        return NextResponse.json(combinedEvents);
     } catch (error: any) {
         console.error('[calendar/events] Database error:', error);
         return NextResponse.json(

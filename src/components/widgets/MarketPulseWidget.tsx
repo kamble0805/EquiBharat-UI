@@ -39,118 +39,90 @@ export function MarketPulseWidget({ compact = false }: MarketPulseWidgetProps) {
 
   if (!data) return null;
 
-  const displaySnapshot = compact ? data.snapshot.slice(0, 4) : data.snapshot;
-  const displayTriggers = compact ? data.triggers.slice(0, 3) : data.triggers;
+  const displayEvents = data.events.slice(0, 3);
+  const displaySectors = data.sectors.slice(0, 3);
 
   return (
-    <div className="widget-card">
+    <div className="widget-card bg-slate-900 border-slate-800 text-slate-200">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Activity className="w-5 h-5 text-primary" />
-          <h3 className="font-semibold text-foreground">Market Pulse</h3>
-          <span className="text-xs text-muted-foreground ml-2">— {data.date}</span>
+          <Activity className="w-5 h-5 text-emerald-400" />
+          <h3 className="font-semibold text-white">Market Pulse</h3>
         </div>
         <Link
           href="/market-pulse"
-          className="text-xs text-primary hover:underline flex items-center gap-1"
+          className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors"
         >
-          Full view
+          Intelligence View
           <ArrowRight className="w-3 h-3" />
         </Link>
       </div>
 
       {/* Status Pills */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <div className="bg-secondary/80 rounded px-3 py-1 flex items-center gap-1.5 text-xs">
-          <span className="text-muted-foreground">Global:</span>
+      <div className="flex flex-wrap gap-2 mb-6">
+        <div className="bg-slate-800 rounded px-2.5 py-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider">
+          <span className="text-slate-500">Global:</span>
           <span className={cn(
-            'font-medium flex items-center gap-0.5',
-            data.globalMood.direction === 'down' ? 'text-destructive' : 'text-success'
+             data.pulse.global_mood === 'Bullish' ? 'text-emerald-400' : 
+             data.pulse.global_mood === 'Bearish' ? 'text-red-400' : 'text-slate-300'
           )}>
-            {data.globalMood.status}
-            {data.globalMood.direction === 'down' ? (
-              <TrendingDown className="w-3 h-3" />
-            ) : (
-              <TrendingUp className="w-3 h-3" />
-            )}
+            {data.pulse.global_mood}
           </span>
         </div>
-        <div className="bg-secondary/80 rounded px-3 py-1 flex items-center gap-1.5 text-xs">
-          <span className="text-muted-foreground">India:</span>
-          <span className="font-medium text-warning">{data.indiaBias}</span>
-        </div>
-        <div className="bg-secondary/80 rounded px-3 py-1 flex items-center gap-1.5 text-xs">
-          <span className="text-muted-foreground">Vol:</span>
-          <span className="font-medium text-warning">{data.volatility}</span>
+        <div className="bg-slate-800 rounded px-2.5 py-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider">
+          <span className="text-slate-500">India:</span>
+          <span className={cn(
+             data.pulse.india_bias === 'Positive' ? 'text-blue-400' : 
+             data.pulse.india_bias === 'Cautionary' ? 'text-orange-400' : 'text-slate-300'
+          )}>
+            {data.pulse.india_bias}
+          </span>
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Key Triggers */}
+      <div className="space-y-4">
+        {/* Sector Summary */}
         <div>
-          <h4 className="text-xs text-muted-foreground uppercase tracking-wider mb-3">
-            Key Triggers
-          </h4>
-          <div className="space-y-2">
-            {displayTriggers.map((trigger) => (
-              <div key={trigger.id} className="flex items-start gap-2 text-sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-warning mt-1.5 shrink-0" />
-                <div className="min-w-0">
-                  <span className="font-medium text-foreground">{trigger.title}</span>
-                  {!compact && (
-                    <span className="text-muted-foreground"> — {trigger.description}</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+           <h4 className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-2 border-b border-slate-800 pb-1">
+             Top Sectors
+           </h4>
+           <div className="flex gap-2">
+             {displaySectors.map((s, i) => (
+               <div key={i} className="flex-1 bg-slate-800/50 p-2 rounded border-l-2" 
+                    style={{ borderLeftColor: s.score > 0 ? '#10b981' : '#ef4444' }}>
+                 <div className="text-[9px] text-slate-400 font-bold truncate uppercase">{s.sector}</div>
+                 <div className="text-xs font-bold text-white">{s.score > 0 ? '+' : ''}{s.score.toFixed(1)}</div>
+               </div>
+             ))}
+           </div>
         </div>
 
-        {/* Snapshot */}
-        <div>
-          <h4 className="text-xs text-muted-foreground uppercase tracking-wider mb-3">
-            Market Snapshot
-          </h4>
-          <div className="space-y-2">
-            {displaySnapshot.map((item, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between py-1.5 px-2 bg-secondary/50 rounded"
-              >
-                <span className="text-sm text-foreground">{item.name}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-mono text-foreground">{item.value}</span>
+        {/* Recent Events */}
+        {!compact && (
+          <div>
+            <h4 className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-2 border-b border-slate-800 pb-1">
+              Impending Events
+            </h4>
+            <div className="space-y-2">
+              {displayEvents.map((e, index) => (
+                <div key={index} className="flex items-center justify-between text-xs">
+                  <span className="text-slate-300 truncate pr-2">{e.event_name}</span>
                   <span className={cn(
-                    'flex items-center gap-0.5 text-xs font-medium',
-                    item.direction === 'up' ? 'text-success' : 'text-destructive'
-                  )}>
-                    {item.direction === 'up' ? (
-                      <TrendingUp className="w-3 h-3" />
-                    ) : (
-                      <TrendingDown className="w-3 h-3" />
-                    )}
-                    {item.direction === 'up' ? '+' : ''}{item.change.toFixed(2)}%
-                  </span>
+                    "font-bold uppercase text-[9px]",
+                    e.impact_level === 'High' ? 'text-red-400' : 'text-slate-500'
+                  )}>{e.impact_level}</span>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
+        )}
+
+        <div className="pt-2">
+           <p className="text-[11px] text-slate-500 italic leading-relaxed">
+             "{data.pulse.summary.substring(0, 100)}..."
+           </p>
         </div>
       </div>
-
-      {/* Risk Flags */}
-      {data.riskFlags.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-border">
-          <div className="flex flex-wrap gap-4">
-            {data.riskFlags.slice(0, 2).map((flag, index) => (
-              <div key={index} className="flex items-center gap-2 text-sm">
-                <AlertTriangle className="w-4 h-4 text-warning shrink-0" />
-                <span className="text-muted-foreground">{flag.message}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

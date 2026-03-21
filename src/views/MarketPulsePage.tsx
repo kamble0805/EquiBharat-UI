@@ -1,26 +1,67 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Activity, TrendingUp, TrendingDown, AlertTriangle, Calendar as CalendarIcon, Clock, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
-import { type MarketPulseData, type MarketTrigger, type MarketSnapshot, type ScheduledEvent, type MarketChange, type RiskFlag } from '@/types';
-import { cn } from '@/lib/utils';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from "framer-motion";
+import { Activity, TrendingUp, Calendar, Loader2, ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { useQuery } from '@tanstack/react-query';
 import { format, subDays, addDays, isSameDay } from 'date-fns';
+import { type MarketPulseData } from '@/types';
+import { cn } from '@/lib/utils';
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-type FocusTab = 'equity' | 'currency' | 'commodities';
+const BiasGauge = ({ pulse }: { pulse: MarketPulseData['pulse'] }) => {
+  return (
+    <div className="bg-slate-900/80 backdrop-blur-sm border border-slate-800 p-8 rounded-2xl text-center shadow-xl">
+      <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6 border-b border-slate-800 pb-2 w-full text-center">
+        Current Market Bias
+      </h3>
+      <div className="flex flex-col sm:flex-row gap-8 sm:gap-12 items-center justify-center">
+        <div>
+          <span className="text-[10px] text-slate-500 uppercase font-bold block mb-2">Global Mood</span>
+          <div className={`text-3xl font-black ${pulse?.global_mood === 'Bullish' ? 'text-emerald-400' : pulse?.global_mood === 'Bearish' ? 'text-red-400' : 'text-slate-300'}`}>
+            {pulse?.global_mood || 'Neutral'}
+          </div>
+        </div>
+        <div className="hidden sm:block h-12 w-[1px] bg-slate-800" />
+        <div>
+          <span className="text-[10px] text-slate-500 uppercase font-bold block mb-2">India Bias</span>
+          <div className={`text-3xl font-black ${pulse?.india_bias === 'Positive' ? 'text-blue-400' : pulse?.india_bias === 'Cautionary' ? 'text-orange-400' : 'text-slate-300'}`}>
+            {pulse?.india_bias || 'Stable'}
+          </div>
+        </div>
+      </div>
+      <p className="mt-8 text-slate-400 text-sm italic max-w-xl mx-auto">
+        "{pulse?.summary || 'Observing market catalysts for emerging bias...'}"
+      </p>
+    </div>
+  );
+};
+
+const SectoralHeatmap = ({ sectors }: { sectors: MarketPulseData['sectors'] }) => {
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      {sectors?.map((s, i) => (
+        <div key={i} className="bg-slate-900/60 backdrop-blur-sm border border-slate-800 p-4 rounded-xl border-l-4 transition-all hover:scale-[1.02] hover:bg-slate-800/80" 
+             style={{ borderLeftColor: s.score > 2 ? '#10b981' : s.score < -2 ? '#ef4444' : '#64748b' }}>
+            <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1 truncate">{s.sector}</span>
+            <div className="flex justify-between items-end">
+               <span className="text-white font-bold">{s.score > 0 ? '+' : ''}{s.score.toFixed(1)}</span>
+               <span className="text-[9px] text-slate-600 font-mono">{s.total_signals} signals</span>
+            </div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const MarketPulsePage = () => {
-  const [activeTab, setActiveTab] = useState<FocusTab>('equity');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-
-  // Format date for display or key usage
+  
   const formattedDate = format(selectedDate, 'yyyy-MM-dd');
 
-  // Fetch real data from market-pulse API
-  const { data, isLoading, isError } = useQuery<MarketPulseData>({
+  const { data: pulseData, isLoading, isError } = useQuery<MarketPulseData>({
     queryKey: ['marketPulse', formattedDate],
     queryFn: async () => {
       const res = await fetch(`/api/market-pulse?date=${formattedDate}`);
@@ -34,50 +75,67 @@ const MarketPulsePage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen pt-20 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen pt-40 flex flex-col items-center justify-center bg-slate-950 text-slate-500 gap-4">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+        <span className="italic animate-pulse">Requesting intelligence pulse...</span>
+      </div>
+    );
+  }
+
+  if (isError || !pulseData) {
+    return (
+      <div className="min-h-screen pt-40 flex flex-col items-center justify-center bg-slate-950 text-slate-400 gap-4">
+        <Activity className="w-12 h-12 text-red-500 opacity-50" />
+        <p>Failed to synchronized with market intelligence feeds.</p>
+        <Button onClick={() => window.location.reload()} variant="outline" className="border-slate-800 text-slate-300">Retry Sync</Button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pt-32 md:pt-40 pb-8 bg-gradient-premium animate-fade-in">
-      <div className="container mx-auto px-4">
-        {/* Header with Date Navigation */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 animate-in fade-in slide-in-from-top-4 duration-500">
+    <div className="min-h-screen pt-32 md:pt-40 pb-16 bg-[#020617] text-slate-200 selection:bg-blue-500/30">
+      <div className="container mx-auto px-4 max-w-6xl">
+        
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1 flex items-center gap-3">
-              MARKET PULSE
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+              <span className="text-[10px] font-black tracking-[0.3em] text-emerald-500 uppercase">Live Intelligence Feed</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-2">
+              MARKET <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">PULSE</span>
             </h1>
-            <p className="text-muted-foreground">
-              Key events and market drivers for traders
+            <p className="text-slate-500 text-sm max-w-md">
+              Real-time sentiment aggregation and cross-sector impact analysis for the Indian markets.
             </p>
           </div>
 
-          <div className="flex items-center gap-2 bg-card border border-border rounded-lg p-1 shadow-sm">
+          <div className="flex items-center gap-2 bg-slate-900/50 border border-slate-800 rounded-xl p-1.5 backdrop-blur-sm self-start md:self-auto">
             <Button
               variant="ghost"
               size="icon"
               onClick={handlePrevDay}
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              className="h-9 w-9 text-slate-500 hover:text-white hover:bg-slate-800"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-5 h-5" />
             </Button>
 
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="ghost" className="h-8 px-3 text-sm font-medium min-w-[140px]">
-                  <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
-                  {format(selectedDate, 'MMMM d, yyyy')}
+                <Button variant="ghost" className="h-9 px-4 text-xs font-bold uppercase tracking-widest text-slate-300 hover:bg-slate-800">
+                  <Calendar className="mr-2 h-4 w-4 text-blue-400" />
+                  {format(selectedDate, 'MMM d, yyyy')}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
-                <Calendar
+              <PopoverContent className="w-auto p-0 bg-slate-900 border-slate-800" align="end">
+                <CalendarComponent
                   mode="single"
                   selected={selectedDate}
                   onSelect={(date) => date && setSelectedDate(date)}
                   initialFocus
                   disabled={(date) => date > new Date()}
+                  className="bg-slate-900 text-slate-200"
                 />
               </PopoverContent>
             </Popover>
@@ -87,140 +145,80 @@ const MarketPulsePage = () => {
               size="icon"
               onClick={handleNextDay}
               disabled={isSameDay(selectedDate, new Date())}
-              className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-30"
+              className="h-9 w-9 text-slate-500 hover:text-white hover:bg-slate-800 disabled:opacity-20"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-5 h-5" />
             </Button>
           </div>
         </div>
 
-        {/* Status Pills */}
-        <div className="flex flex-wrap gap-3 mb-6 animate-in fade-in slide-in-from-top-4 duration-500 delay-100">
-          <div className="bg-card border border-border shadow-sm rounded-lg px-4 py-2 flex items-center gap-2">
-            <span className="text-muted-foreground text-sm">Global Mood:</span>
-            <span className={cn(
-              'font-semibold flex items-center gap-1',
-              data.globalMood.direction === 'down' ? 'text-destructive' :
-                data.globalMood.direction === 'up' ? 'text-success' : 'text-warning'
-            )}>
-              {data.globalMood.status}
-              {data.globalMood.direction === 'down' ? (
-                <TrendingDown className="w-4 h-4" />
-              ) : data.globalMood.direction === 'up' ? (
-                <TrendingUp className="w-4 h-4" />
-              ) : (
-                <Activity className="w-4 h-4" />
-              )}
-            </span>
-          </div>
-          <div className="bg-card border border-border shadow-sm rounded-lg px-4 py-2 flex items-center gap-2">
-            <span className="text-muted-foreground text-sm">India Bias:</span>
-            <span className="font-semibold text-primary">{data.indiaBias}</span>
-          </div>
-          <div className="bg-card border border-border shadow-sm rounded-lg px-4 py-2 flex items-center gap-2">
-            <span className="text-muted-foreground text-sm">Volatility:</span>
-            <span className="font-semibold text-warning">{data.volatility}</span>
-          </div>
-          <div className="bg-card border border-border shadow-sm rounded-lg px-4 py-2 flex items-center gap-2">
-            <span className="text-muted-foreground text-sm">Liquidity:</span>
-            <span className="font-semibold text-foreground">{data.liquidity}</span>
-          </div>
-        </div>
-
-        {/* Main Grid */}
-        <div className="grid lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
-          {/* Left Column - 2/3 width */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Key Market Triggers */}
-            <div className="widget-card bg-card border border-border shadow-card rounded-xl p-6 transition-all hover:shadow-lg">
-              <h2 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                <Activity className="w-5 h-5 text-primary" />
-                Key Market Triggers
-              </h2>
-              <div className="space-y-4">
-                {data.triggers.map((trigger) => (
-                  <div key={trigger.id} className="flex items-start gap-4 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                    <span className="w-2 h-2 rounded-full bg-warning mt-2 shrink-0 shadow-sm shadow-warning/50" />
-                    <div>
-                      <span className="font-semibold text-foreground block mb-1">{trigger.title}</span>
-                      <span className="text-sm text-muted-foreground">{trigger.description}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="space-y-8"
+        >
+          {/* Row 1: Bias and Triggers */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <BiasGauge pulse={pulseData.pulse} />
             </div>
-
-            {/* Market Focus Section - Simplified to only Equity */}
-            <div className="bg-card border border-border shadow-card rounded-xl overflow-hidden p-6">
-              <div className="flex flex-col gap-2">
-                <span className="text-xs font-black uppercase tracking-[0.2em] text-primary/70">Equity Focus: NIFTY 50</span>
-                <span className="text-xl font-bold text-foreground leading-relaxed">{data.equityFocus}</span>
-              </div>
+            <div className="bg-slate-900/80 backdrop-blur-sm border border-slate-800 p-8 rounded-2xl shadow-xl">
+               <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6 border-b border-slate-800 pb-2 flex items-center gap-2">
+                 <Info className="w-3 h-3" /> TOP TRIGGERS
+               </h3>
+               <ul className="space-y-4">
+                  {JSON.parse(pulseData.pulse?.top_triggers || '[]').map((trigger: string, i: number) => (
+                     <li key={i} className="flex gap-3 items-start border-l-2 border-blue-500/50 pl-4 py-1 group hover:border-blue-400 transition-colors">
+                        <span className="text-slate-300 text-xs font-medium leading-relaxed group-hover:text-white transition-colors">{trigger}</span>
+                     </li>
+                  ))}
+               </ul>
             </div>
           </div>
 
-          {/* Right Column - 1/3 width */}
-          <div className="space-y-6">
-            {/* Market Snapshot */}
-            <div className="widget-card bg-card border border-border shadow-card rounded-xl p-6 sticky top-24">
-              <h3 className="font-semibold text-foreground mb-4">Market Snapshot</h3>
-              <div className="space-y-1">
-                {data.snapshot.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0 hover:bg-muted/30 px-2 rounded transition-colors group">
-                    <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">{item.name}</span>
-                    <div className="flex flex-col items-end">
-                      <span className="font-mono font-bold text-foreground">{item.value}</span>
-                      <span className={cn(
-                        'flex items-center gap-0.5 text-xs font-bold',
-                        item.direction === 'up' ? 'text-success' : 'text-destructive'
-                      )}>
-                        {item.direction === 'up' ? (
-                          <TrendingUp className="w-3 h-3" />
-                        ) : (
-                          <TrendingDown className="w-3 h-3" />
-                        )}
-                        {Math.abs(item.change).toFixed(2)}%
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Economic Calendar Widget */}
-            <div className="widget-card bg-card border border-border shadow-card rounded-xl p-6">
-              <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                <CalendarIcon className="w-4 h-4 text-primary" />
-                Today's Events
-              </h3>
-              <div className="timeline relative space-y-6 pl-4 border-l border-border ml-2">
-                {data.calendarEvents.map((event, index) => (
-                  <div key={index} className="relative">
-                    <div className={cn(
-                      "absolute -left-[21px] top-1 w-3 h-3 rounded-full border-2 border-background",
-                      event.impact === 'high' ? 'bg-destructive' :
-                        event.impact === 'medium' ? 'bg-warning' : 'bg-success'
-                    )} />
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs font-mono text-muted-foreground">{event.time}</span>
-                      <span className="text-sm font-medium text-foreground">{event.event}</span>
-                      <span className={cn(
-                        'text-[10px] uppercase tracking-wider font-bold w-fit px-1.5 py-0.5 rounded',
-                        event.impact === 'high' ? 'bg-destructive/10 text-destructive' :
-                          event.impact === 'medium' ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'
-                      )}>
-                        {event.impact} Impact
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+          {/* Row 2: Heatmap and Timeline */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-12">
+             <div className="space-y-6">
+                <h3 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2 px-1">
+                   <TrendingUp className="w-4 h-4 text-emerald-400" /> Sectoral Heatmap
+                </h3>
+                <SectoralHeatmap sectors={pulseData.sectors} />
+             </div>
+             
+             <div className="space-y-6">
+                <h3 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2 px-1">
+                   <Calendar className="w-4 h-4 text-blue-400" /> Impact Timeline
+                </h3>
+                <div className="space-y-3">
+                   {pulseData.events?.map((e, i) => (
+                      <div key={i} className="bg-slate-900/60 backdrop-blur-sm border border-slate-800 p-4 rounded-xl flex items-center justify-between group hover:bg-slate-800/60 transition-colors">
+                         <div className="flex gap-4 items-center">
+                            <div className={cn(
+                              "w-2 h-2 rounded-full transition-all duration-500",
+                              e.impact_level === 'High' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 
+                              e.impact_level === 'Moderate' ? 'bg-orange-500' : 'bg-slate-500'
+                            )} />
+                            <div>
+                               <div className="text-white text-xs font-bold group-hover:text-blue-400 transition-colors">{e.event_name}</div>
+                               <div className="text-[10px] text-slate-500 mt-0.5 uppercase tracking-tighter">
+                                 {e.country} <span className="mx-1 opacity-30">•</span> {new Date(e.event_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                               </div>
+                            </div>
+                         </div>
+                         <div className="text-[10px] font-bold text-slate-600 bg-slate-950 px-2 py-1 rounded">
+                            {e.impact_level}
+                         </div>
+                      </div>
+                   ))}
+                </div>
+             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
 };
 
 export default MarketPulsePage;
+

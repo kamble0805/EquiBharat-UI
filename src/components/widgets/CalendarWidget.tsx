@@ -117,13 +117,15 @@ export function CalendarWidget({ compact = false }: CalendarWidgetProps) {
     })
     : new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' });
 
-  const formatTime = (iso: string) =>
-    new Date(iso).toLocaleTimeString('en-IN', {
+  const formatEventTime = (event: CalendarEvent) => {
+    if (event.source === 'Market Holiday') return 'All Day';
+    return new Date(event.published_date).toLocaleTimeString('en-IN', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: true,
       timeZone: 'Asia/Kolkata'
     });
+  };
 
   return (
     <div className="widget-card h-full">
@@ -166,8 +168,8 @@ export function CalendarWidget({ compact = false }: CalendarWidgetProps) {
                     onClick={() => setExpandedId(expandedId === event.raw_news_id ? null : event.raw_news_id)}
                     className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-secondary/80 transition-colors"
                   >
-                    <span className="text-xs font-mono text-muted-foreground w-14 shrink-0">
-                      {formatTime(event.published_date)}
+                    <span className="text-[10px] font-mono text-muted-foreground w-14 shrink-0 uppercase">
+                      {formatEventTime(event)}
                     </span>
                     <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded shrink-0 max-w-[80px] truncate">
                       {event.source.split('(')[0].trim()}
