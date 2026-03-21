@@ -38,11 +38,24 @@ Advanced calendar-driven economic analysis platform for Indian equity markets. T
     - Configured the system specifically for **Hostinger Mail (titan/standard)** using SMTP Port **465** with SSL/TLS security.
     - Emails are sent from `info@equibharat.com` with a clean, branded HTML template.
 
+### 📅 Calendar & Market Intelligence
+- **Holiday Engine Integration**:
+    - Built a standalone Holiday Management module that syncs with a `holidays` table in the database.
+    - **Indian Market Holidays**: Seeded and displayed 2026 Indian market holidays (NSE/BSE) across the platform.
+    - **Dual-View Support**: Integrated holidays into both the **Economic Calendar** (Timeline View) and the **Market Pulse** (Impending Events) widget.
+    - **Display Logic**: Implemented "All Day" formatting for holidays to distinguish them from timestamped economic news.
+- **AI-Enriched Economic Calendar**:
+    - **Dynamic Schema Detection**: The calendar API now automatically detects whether the backend is using `news_events_ai` or `news_event_ai` tables and maps columns accordingly (`raw_event_id` vs `news_event_id`).
+    - **Impact Analysis**: Integrated "Market Impact Explanations" and "Likely Affected Sectors" directly into the calendar event details, providing institutional-grade insights for retail traders.
+- **Market Pulse Synchronization**:
+    - **Live Sentiment Props**: The Market Pulse now combines global moods, India-specific bias, and top triggers with a real-time countdown of impending high-impact events and holidays.
+
 ### 📑 Database Schema Changes (Audit Trail)
 - **Table Synchronisation**:
     - Audited the `users` table and aligned API queries to use only existing columns.
     - Verified the `forum_threads` and `forum_replies` tables for correctly handling integer-based primary keys.
-    - Added the `contact_messages` table logic (currently disabled in favor of direct email, but available for log-based persistence if needed).
+    - **New `holidays` Table**: Integrated support for `id`, `name`, `date`, and `type` columns for regional market tracking.
+    - **Dynamic AI Event Detection**: Switched to `information_schema.COLUMNS` lookups for `news_events_ai` to ensure zero-breakage deployments across different DB environments.
 
 ---
 
@@ -108,6 +121,10 @@ If your build fails with `@/data/mockData could not be resolved`, ensures that `
 ---
 
 ## 📁 Key Files & Modules
+- `src/app/api/calendar/events/route.ts`: Schema-aware AI event and holiday aggregator.
+- `src/app/api/market-pulse/route.ts`: Real-time market sentiment and impending event feed.
+- `src/components/widgets/CalendarWidget.tsx`: Compact dashboard-integrated economic timeline.
+- `src/views/CalendarPage.tsx`: Full-screen filtered economic intelligence view.
 - `src/app/api/contact/route.ts`: Email dispatch logic using Hostinger SMTP.
 - `src/components/PreferenceLoader.tsx`: Real-time synchronization of user settings from DB.
 - `src/context/AuthContext.tsx`: Persistent authentication and profile state.
