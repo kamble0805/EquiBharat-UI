@@ -70,23 +70,32 @@ export async function GET(req: NextRequest) {
             return t.title || t.description || JSON.stringify(t);
         });
 
-        // 4. Fetch Holidays
-        const [holidayTableRes]: any = await pool.query(`SHOW TABLES LIKE 'holidays'`);
-        let upcomingHolidays: any[] = [];
-        if (holidayTableRes.length > 0) {
-            const [holidayRows]: any = await pool.query(`
-                SELECT name, date FROM holidays 
-                WHERE date >= ?
-                ORDER BY date ASC LIMIT 5
-            `, [dateParam || new Date().toISOString().split('T')[0]]);
-            
-            upcomingHolidays = holidayRows.map((h: any) => ({
-                event_name: `[Holiday] ${h.name}`,
-                impact_level: 'Moderate',
-                country: 'India',
-                event_time: h.date
-            }));
-        }
+        // 4. Calculate This Week & Next Week window for Impact Timeline (Fixed 14-day window)
+        const today = new Date();
+        const startOfThisWeek = new Date(today);
+        startOfThisWeek.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1)); // This Monday
+        startOfThisWeek.setHours(0, 0, 0, 0);
+
+        const endOfNextWeek = new Date(startOfThisWeek);
+        endOfNextWeek.setDate(startOfThisWeek.getDate() + 13); // 2 Sundays from now (Next-Next Sunday)
+        endOfNextWeek.setHours(23, 59, 59, 999);
+
+        // 4. Fetch Upcoming Scheduled News in 14-day window
+        const [scheduledRows]: any = await pool.query(`
+            SELECT title, category, scheduled_date, scheduled_time, ingestion_link
+            FROM scheduled_news 
+            WHERE scheduled_date >= ? AND scheduled_date <= ?
+            AND status = 'scheduled'
+            ORDER BY scheduled_date ASC, scheduled_time ASC
+        `, [startOfThisWeek.toISOString().split('T')[0], endOfNextWeek.toISOString().split('T')[0]]);
+
+        const mappedScheduled = scheduledRows.map((s: any) => ({
+            event_name: s.title,
+            impact_level: s.category?.toLowerCase().includes('inflation') || s.category?.toLowerCase().includes('rates') ? 'High' : 'Moderate',
+            country: s.title?.toLowerCase().includes('us ') ? 'USA' : 'India',
+            event_time: `${new Date(s.scheduled_date).toISOString().split('T')[0]}T${s.scheduled_time || '00:00:00'}`,
+            link: s.ingestion_link
+        }));
 
         return NextResponse.json({
             pulse: {
@@ -102,7 +111,9 @@ export async function GET(req: NextRequest) {
                 score: Number(s.score),
                 total_signals: Number(s.total_signals)
             })),
-            events: [...upcomingHolidays]
+            events: [...mappedScheduled].sort((a, b) => 
+                new Date(a.event_time).getTime() - new Date(b.event_time).getTime()
+            )
         });
     } catch (error) {
         console.error('Market Pulse API Error:', error);

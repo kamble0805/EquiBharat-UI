@@ -18,6 +18,13 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
+import { 
+  isAfter, 
+  isBefore, 
+  startOfDay, 
+  endOfWeek, 
+  addDays 
+} from 'date-fns';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -107,15 +114,27 @@ export function CalendarWidget({ compact = false }: CalendarWidgetProps) {
     refetchInterval: 60 * 1000, // 1 min (60 sec)
   });
 
-  // Show only the most recent N events in the widget
-  const displayEvents = events.slice(0, compact ? 4 : 6);
-
-  // Format the date badge from the latest event's date
-  const todayLabel = displayEvents.length > 0
-    ? new Date(displayEvents[0].published_date).toLocaleDateString('en-IN', {
-      day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata'
+  // Filter for 'Upcoming This Week' events (Today onwards within the current week)
+  const today = startOfDay(new Date());
+  const SundayThisWeek = endOfWeek(today, { weekStartsOn: 1 });
+  
+  const upcomingThisWeek = events
+    .filter(event => {
+      const eventDate = new Date(event.published_date);
+      // Event is today or in the future AND before the end of this week
+      return (isAfter(eventDate, today) || eventDate.toDateString() === today.toDateString()) && 
+             isBefore(eventDate, addDays(SundayThisWeek, 1));
     })
-    : new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' });
+    .sort((a, b) => new Date(a.published_date).getTime() - new Date(b.published_date).getTime());
+
+  // Show Upcoming if available, else fallback to most recent
+  const displayEvents = upcomingThisWeek.length > 0 
+    ? upcomingThisWeek.slice(0, compact ? 4 : 6)
+    : events.slice(0, compact ? 4 : 6);
+
+  const todayLabel = upcomingThisWeek.length > 0
+    ? "Upcoming This Week"
+    : "Recent Intelligence";
 
   const formatEventTime = (event: CalendarEvent) => {
     if (event.source === 'Market Holiday') return 'All Day';

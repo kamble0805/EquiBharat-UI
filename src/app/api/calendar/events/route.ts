@@ -9,117 +9,117 @@ import pool from '@/lib/db';
  */
 export async function GET() {
     try {
-        // 1. Detect AI table and foreign key column dynamically
-        const [aiTableRes]: any = await pool.query(`
-            SELECT TABLE_NAME FROM information_schema.TABLES
-            WHERE TABLE_SCHEMA = DATABASE()
-              AND TABLE_NAME IN ('news_events_ai', 'news_event_ai')
-            LIMIT 1
-        `);
-        const aiTable = aiTableRes?.[0]?.TABLE_NAME;
-
-        if (!aiTable) {
-            return NextResponse.json([]); // No AI table, no calendar events
-        }
-
-        let fkCol = 'raw_event_id';
-        const [aiCols]: any = await pool.query(`
-            SELECT COLUMN_NAME FROM information_schema.COLUMNS
-            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
-        `, [aiTable]);
-        const colNames = aiCols.map((c: any) => c.COLUMN_NAME);
-        if (colNames.includes('raw_event_id')) fkCol = 'raw_event_id';
-        else if (colNames.includes('news_event_id')) fkCol = 'news_event_id';
-        else if (colNames.includes('raw_news_id')) fkCol = 'raw_news_id';
-
-        // 2. Fetch data using the detected schema - Prioritize raw impact level for consistency
+        // Fetch a unified feed of realized news (calendar_news) and upcoming events (scheduled_news)
+        // This ensures the calendar shows both history and the road ahead.
         const [rows]: any = await pool.query(`
-            SELECT 
-                nea.id AS event_id,
-                ne.id AS raw_news_id,
-                ne.title,
-                ne.source,
-                ne.impact_level AS raw_impact,
-                ne.sector AS category,
-                ne.published_at AS published_date,
-                nea.simple_summary AS summary,
-                nea.impact_direction,
-                nea.likely_affected_indices,
-                nea.likely_affected_sectors,
-                ne.matched_keywords AS keywords,
-                nea.market_impact_explanation
-            FROM \`${aiTable}\` nea
-            JOIN news_events ne ON nea.\`${fkCol}\` = ne.id
-            ORDER BY ne.published_at DESC
-            LIMIT 100
-        `);
-
-        const events = rows.map((row: any) => {
-            const impact = (row.raw_impact || 'low').toLowerCase();
-            return {
-                id: row.event_id.toString(),
-                raw_news_id: row.raw_news_id.toString(),
-                title: row.title,
-                source: row.source,
-                category: row.category || 'General',
-                summary: row.summary || '',
-                simple_summary: row.summary || '',
-                impact_level: impact,
-                overall_impact_level: impact,
-                impact_direction: mapDirection(row.impact_direction),
-                likely_affected_indices: parseArrayField(row.likely_affected_indices),
-                likely_affected_sectors: parseArrayField(row.likely_affected_sectors),
-                keywords: parseArrayField(row.keywords),
-                published_date: row.published_date,
-                explanation: row.market_impact_explanation
-            };
-        });
-
-        // 3. Fetch holidays from the 'holidays' table if it exists
-        const [holidayTableRes]: any = await pool.query(`
-            SHOW TABLES LIKE 'holidays'
-        `);
-        
-        let holidayEvents: any[] = [];
-        if (holidayTableRes.length > 0) {
-            const [holidayRows]: any = await pool.query(`
+            SELECT * FROM (
                 SELECT 
-                    id, 
-                    name, 
-                    date, 
-                    type 
-                FROM holidays 
-                ORDER BY date ASC
-            `);
+                    cn.id, 
+                    cn.title, 
+                    cn.category, 
+                    cn.event_date, 
+                    cn.event_time, 
+                    cn.ai_summary, 
+                    cn.description,
+                    cn.source_link, 
+                    cn.source_name, 
+                    cn.speaker, 
+                    cn.usual_effect, 
+                    cn.why_traders_care, 
+                    cn.actual_value, 
+                    cn.forecast_value, 
+                    cn.previous_value,
+                    cn.scheduled_news_id,
+                    'REALIZED' as record_type,
+                    (
+                        SELECT prev.source_link 
+                        FROM calendar_news prev 
+                        WHERE prev.title = cn.title 
+                          AND (
+                            prev.event_date < cn.event_date 
+                            OR (prev.event_date = cn.event_date AND prev.event_time < cn.event_time)
+                          )
+                        ORDER BY prev.event_date DESC, prev.event_time DESC 
+                        LIMIT 1
+                    ) as previous_news_link
+                FROM calendar_news cn
 
-            holidayEvents = holidayRows.map((h: any) => ({
-                id: `holiday-${h.id}`,
-                raw_news_id: `h-${h.id}`,
-                title: h.name,
-                source: 'Market Holiday',
-                category: h.type || 'Holiday',
-                summary: `${h.name} - Market Closed`,
-                simple_summary: `${h.name} - Market Closed`,
-                impact_level: 'moderate',
-                overall_impact_level: 'moderate',
-                impact_direction: 'neutral',
-                likely_affected_indices: [],
-                likely_affected_sectors: [],
-                keywords: ['holiday', 'india'],
-                published_date: h.date,
-                explanation: `Exchange holiday observed in India.`
-            }));
-        }
+                UNION ALL
 
-        // Combine and sorta by date
-        const combinedEvents = [...events, ...holidayEvents];
-        combinedEvents.sort((a, b) => new Date(b.published_date).getTime() - new Date(a.published_date).getTime());
+                SELECT 
+                    sn.id, 
+                    sn.title, 
+                    sn.category, 
+                    sn.scheduled_date as event_date, 
+                    sn.scheduled_time as event_time, 
+                    'Upcoming event: Institutional coverage will pulsate upon data release.' as ai_summary, 
+                    'Scheduled for release' as description,
+                    sn.ingestion_link as source_link, 
+                    'Institutional Schedule' as source_name, 
+                    'Scheduled Data Release' as speaker, 
+                    NULL as usual_effect, 
+                    'Traders are preparing for the release of ' || sn.title || ' to assess trend strength.' as why_traders_care, 
+                    NULL as actual_value, 
+                    NULL as forecast_value, 
+                    NULL as previous_value,
+                    NULL as scheduled_news_id,
+                    'UPCOMING' as record_type,
+                    NULL as previous_news_link
+                FROM scheduled_news sn
+                WHERE sn.id NOT IN (SELECT scheduled_news_id FROM calendar_news WHERE scheduled_news_id IS NOT NULL)
+            ) as unified_feed
+            ORDER BY event_date DESC, event_time DESC
+            LIMIT 1000
+        `);
 
-        return NextResponse.json(combinedEvents);
+        // Safe parsing for usual_effect: ensuring it is always returned as a single high-fidelity string
+        const safeUsualEffect = (val: any): string => {
+            if (!val) return 'Actual > Forecast = Bullish for Currency Performance';
+            
+            try {
+                const parsed = typeof val === 'string' ? JSON.parse(val) : val;
+                if (parsed && typeof parsed === 'object') {
+                    if (parsed.full) return parsed.full;
+                    if (parsed.bullish && parsed.bearish) {
+                        return `Bullish: ${parsed.bullish} | Bearish: ${parsed.bearish}`;
+                    }
+                    return parsed.bullish || parsed.bearish || String(val);
+                }
+            } catch {
+                // Return original string if not JSON
+                return String(val);
+            }
+            return String(val);
+        };
+
+        // Format for the PremiumEconomicCalendar component
+        const formattedEvents = rows.map((row: any) => ({
+            id: String(row.id),
+            title: row.title,
+            summary: row.ai_summary || row.description,
+            category: row.category,
+            // Construct a valid ISO date string from date and time
+            published_date: `${row.event_date.toISOString().split('T')[0]}T${row.event_time || '00:00:00'}`,
+            source: row.source_name || (row.record_type === 'UPCOMING' ? 'Scheduled Event' : 'Market Intelligence'),
+            impact_level: row.record_type === 'UPCOMING' ? 'low' : 'medium', // Color-code upcoming as low until confirmed
+            impact_direction: mapDirection(row.impact_direction),
+            link: row.source_link,
+            // Premium enrichment fields
+            currency: 'INR', // Default to INR but can be contextualized later
+            usual_effect: safeUsualEffect(row.usual_effect),
+            why_traders_care: row.why_traders_care,
+            // Premium footer authority
+            speaker: row.source_name || row.speaker || 'Official Publication',
+            verify_link: row.source_link,
+            // Custom field for the "link to previous news"
+            previous_news_link: row.previous_news_link
+        }));
+
+        return NextResponse.json(formattedEvents);
     } catch (error: any) {
         console.error('[calendar/events] Database error:', error);
         return NextResponse.json(
-            { error: 'Failed to fetch calendar events from AI table' },
+            { error: 'Failed to fetch calendar events' },
             { status: 500 }
         );
     }

@@ -23,7 +23,7 @@ interface DateRangeFilterProps {
     setDate: (date: DateRange | undefined) => void;
 }
 
-const ranges = ["Last 30 Days", "Last Month", "Last Week", "Yesterday", "Today", "This Week"];
+const ranges = ["Last Week", "Yesterday", "Today", "This Week", "Upcoming Week"];
 
 export const DateRangeFilter = ({ selectedRange, onRangeChange, date, setDate }: DateRangeFilterProps) => {
     return (

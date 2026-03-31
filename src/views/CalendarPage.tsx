@@ -5,7 +5,8 @@ import { DateRange } from "react-day-picker";
 import { useQuery } from '@tanstack/react-query';
 import { FilterPanel } from "@/components/economic-calendar/FilterPanel";
 import { DateRangeFilter } from "@/components/economic-calendar/DateRangeFilter";
-import { EventTable, EconomicEvent } from "@/components/economic-calendar/EventTable";
+import { PremiumEconomicCalendar, PremiumEvent } from "@/components/economic-calendar/PremiumEconomicCalendar";
+import { EconomicEvent } from "@/components/economic-calendar/EventTable";
 import { Loader2 } from "lucide-react";
 import {
   startOfDay,
@@ -30,7 +31,7 @@ const fetchCalendarEvents = async (): Promise<EconomicEvent[]> => {
 
   // Map backend fields to the EconomicEvent shape used by the UI
   const events = Array.isArray(data) ? data : (data.events ?? []);
-  return events.map((item: any): EconomicEvent => ({
+  return events.map((item: any): PremiumEvent => ({
     id: String(item.id ?? item.news_event_ai_id ?? ''),
     raw_news_id: String(item.raw_news_id ?? item.news_event_id ?? item.id ?? ''),
     source: item.source ?? item.feed_name ?? '',
@@ -44,15 +45,22 @@ const fetchCalendarEvents = async (): Promise<EconomicEvent[]> => {
     keywords: item.keywords || [],
     published_date: item.published_date ?? item.created_at ?? new Date().toISOString(),
     link: item.link ?? item.url ?? null,
+    // Premium fields
+    currency: item.currency ?? (item.title?.includes('RBI') || item.source?.includes('PIB') ? 'INR' : 'USD'),
+    usual_effect: item.usual_effect,
+    why_traders_care: item.why_traders_care,
+    technical_notes: item.technical_notes,
+    speaker: item.speaker,
+    verify_link: item.verify_link
   }));
 };
 
 const CalendarPage = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [selectedRange, setSelectedRange] = useState("Last 30 Days");
+  const [selectedRange, setSelectedRange] = useState("This Week");
   const [date, setDate] = useState<DateRange | undefined>({
-    from: subDays(new Date(), 30),
-    to: new Date(),
+    from: startOfWeek(new Date(), { weekStartsOn: 1 }),
+    to: endOfWeek(new Date(), { weekStartsOn: 1 }),
   });
 
   const [selectedSources, setSelectedSources] = useState<string[]>([]);
@@ -60,7 +68,7 @@ const CalendarPage = () => {
   const [selectedImpact, setSelectedImpact] = useState<string[]>([]);
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
 
-  const { data: events = [], isLoading, isError } = useQuery<EconomicEvent[], Error>({
+  const { data: events = [], isLoading, isError } = useQuery<PremiumEvent[], Error>({
     queryKey: ['calendarEvents'],
     queryFn: fetchCalendarEvents,
     refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
@@ -82,17 +90,6 @@ const CalendarPage = () => {
     }
 
     switch (range) {
-      case "Last 30 Days":
-        return {
-          start: startOfDay(subDays(now, 30)),
-          end: endOfDay(now)
-        };
-      case "Last Month":
-        const lastMonth = subMonths(now, 1);
-        return {
-          start: startOfMonth(lastMonth),
-          end: endOfMonth(lastMonth)
-        };
       case "Last Week":
         const lastWeek = subDays(now, 7);
         return {
@@ -114,10 +111,16 @@ const CalendarPage = () => {
           start: startOfWeek(now, { weekStartsOn: 1 }),
           end: endOfWeek(now, { weekStartsOn: 1 })
         };
+      case "Upcoming Week":
+        const nextWeek = addDays(now, 7);
+        return {
+          start: startOfWeek(nextWeek, { weekStartsOn: 1 }),
+          end: endOfWeek(nextWeek, { weekStartsOn: 1 })
+        };
       default:
         return {
-          start: startOfDay(subDays(now, 30)),
-          end: endOfDay(now)
+          start: startOfWeek(now, { weekStartsOn: 1 }),
+          end: endOfWeek(now, { weekStartsOn: 1 })
         };
     }
   };
@@ -153,7 +156,7 @@ const CalendarPage = () => {
     setSelectedKeywords([]);
   };
 
-  const filteredEvents = (events || []).filter((event): event is EconomicEvent => {
+  const filteredEvents = (events || []).filter((event): event is PremiumEvent => {
     if (!event?.published_date) return false;
 
     try {
@@ -183,27 +186,7 @@ const CalendarPage = () => {
     }
   });
 
-  const groupedByDate = (filteredEvents || []).reduce((acc, event) => {
-    if (!event?.published_date) return acc;
-
-    try {
-      // Get the date string in IST (YYYY-MM-DD)
-      const dateKey = new Date(event.published_date).toLocaleDateString('sv-SE', { timeZone: 'Asia/Kolkata' });
-
-      if (!acc.has(dateKey)) {
-        acc.set(dateKey, []);
-      }
-      acc.get(dateKey)!.push(event);
-      return acc;
-    } catch (error) {
-      console.error('Error processing event:', event, error);
-      return acc;
-    }
-  }, new Map<string, EconomicEvent[]>());
-
-  groupedByDate.forEach((evts) => {
-    evts.sort((a, b) => new Date(b.published_date).getTime() - new Date(a.published_date).getTime());
-  });
+  // Note: Grouping and sorting is now handled internally by PremiumEconomicCalendar
 
   return (
     <div className="min-h-screen pt-32 md:pt-40 pb-8 bg-gradient-premium animate-fade-in">
@@ -270,7 +253,7 @@ const CalendarPage = () => {
               <p className="text-destructive">Error loading events. Please try again later.</p>
             </div>
           ) : (
-            <EventTable events={filteredEvents} groupedByDate={groupedByDate} />
+            <PremiumEconomicCalendar events={filteredEvents} />
           )}
         </div>
       </main>
