@@ -93,27 +93,41 @@ export async function GET() {
         };
 
         // Format for the PremiumEconomicCalendar component
-        const formattedEvents = rows.map((row: any) => ({
-            id: String(row.id),
-            title: row.title,
-            summary: row.ai_summary || row.description,
-            category: row.category,
-            // Construct a valid ISO date string from date and time
-            published_date: `${row.event_date.toISOString().split('T')[0]}T${row.event_time || '00:00:00'}`,
-            source: row.source_name || (row.record_type === 'UPCOMING' ? 'Scheduled Event' : 'Market Intelligence'),
-            impact_level: row.record_type === 'UPCOMING' ? 'low' : 'medium', // Color-code upcoming as low until confirmed
-            impact_direction: mapDirection(row.impact_direction),
-            link: row.source_link,
-            // Premium enrichment fields
-            currency: 'INR', // Default to INR but can be contextualized later
-            usual_effect: safeUsualEffect(row.usual_effect),
-            why_traders_care: row.why_traders_care,
-            // Premium footer authority
-            speaker: row.source_name || row.speaker || 'Official Publication',
-            verify_link: row.source_link,
-            // Custom field for the "link to previous news"
-            previous_news_link: row.previous_news_link
-        }));
+        const formattedEvents = rows.map((row: any) => {
+            let dateStr = '';
+            if (row.event_date instanceof Date) {
+               // Safely extract the exact local date components to avoid toISOString() shifting the day by -1
+               const yyyy = row.event_date.getFullYear();
+               const mm = String(row.event_date.getMonth() + 1).padStart(2, '0');
+               const dd = String(row.event_date.getDate()).padStart(2, '0');
+               dateStr = `${yyyy}-${mm}-${dd}`;
+            } else {
+               dateStr = String(row.event_date).split('T')[0];
+            }
+
+            return {
+                id: `${row.record_type}_${row.id}`,
+                raw_news_id: String(row.id),
+                title: row.title,
+                summary: row.ai_summary || row.description,
+                category: row.category,
+                // Construct a valid local ISO date string without shifting timezone
+                published_date: `${dateStr}T${row.event_time || '00:00:00'}`,
+                source: row.source_name || (row.record_type === 'UPCOMING' ? 'Scheduled Event' : 'Market Intelligence'),
+                impact_level: row.record_type === 'UPCOMING' ? 'low' : 'medium', // Color-code upcoming as low until confirmed
+                impact_direction: mapDirection(row.impact_direction),
+                link: row.source_link,
+                // Premium enrichment fields
+                currency: 'INR', // Default to INR but can be contextualized later
+                usual_effect: safeUsualEffect(row.usual_effect),
+                why_traders_care: row.why_traders_care,
+                // Premium footer authority
+                speaker: row.source_name || row.speaker || 'Official Publication',
+                verify_link: row.source_link,
+                // Custom field for the "link to previous news"
+                previous_news_link: row.previous_news_link
+            };
+        });
 
         return NextResponse.json(formattedEvents);
     } catch (error: any) {

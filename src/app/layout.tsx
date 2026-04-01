@@ -8,7 +8,7 @@ export const metadata: Metadata = {
         process.env.NEXT_PUBLIC_BASE_URL ?? 'https://equibharat.com'
     ),
     title: {
-        default: 'EquiBharat – India Economic Intelligence',
+        default: 'EquiBharat – India Economic Intelligence Terminal',
         template: '%s | EquiBharat',
     },
     description:

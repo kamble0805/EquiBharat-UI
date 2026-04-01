@@ -43,37 +43,37 @@ export function MarketPulseWidget({ compact = false }: MarketPulseWidgetProps) {
   const displaySectors = data.sectors.slice(0, 3);
 
   return (
-    <div className="widget-card bg-slate-900 border-slate-800 text-slate-200">
+    <div className="widget-card">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Activity className="w-5 h-5 text-emerald-400" />
-          <h3 className="font-semibold text-white">Market Pulse</h3>
+          <Activity className="w-5 h-5 text-primary" />
+          <h1 className="font-serif font-black text-white text-sm">Equi<span className="text-primary italic">Bharat</span> <span className="opacity-40 font-sans font-bold">PULSE</span></h1>
         </div>
         <Link
           href="/market-pulse"
-          className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors"
+          className="text-[10px] text-primary hover:text-primary/80 font-black uppercase tracking-widest flex items-center gap-1 transition-colors"
         >
-          Intelligence View
+          Full Analysis
           <ArrowRight className="w-3 h-3" />
         </Link>
       </div>
 
       {/* Status Pills */}
       <div className="flex flex-wrap gap-2 mb-6">
-        <div className="bg-slate-800 rounded px-2.5 py-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider">
-          <span className="text-slate-500">Global:</span>
+        <div className="bg-secondary rounded px-2.5 py-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider">
+          <span className="text-muted-foreground font-mono opacity-50">Global:</span>
           <span className={cn(
-             data.pulse.global_mood === 'Bullish' ? 'text-emerald-400' : 
-             data.pulse.global_mood === 'Bearish' ? 'text-red-400' : 'text-slate-300'
+             data.pulse.global_mood === 'Bullish' ? 'text-success' : 
+             data.pulse.global_mood === 'Bearish' ? 'text-destructive' : 'text-foreground'
           )}>
             {data.pulse.global_mood}
           </span>
         </div>
-        <div className="bg-slate-800 rounded px-2.5 py-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider">
-          <span className="text-slate-500">India:</span>
+        <div className="bg-secondary rounded px-2.5 py-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider">
+          <span className="text-muted-foreground font-mono opacity-50">India:</span>
           <span className={cn(
-             data.pulse.india_bias === 'Positive' ? 'text-blue-400' : 
-             data.pulse.india_bias === 'Cautionary' ? 'text-orange-400' : 'text-slate-300'
+             data.pulse.india_bias === 'Positive' ? 'text-primary' : 
+             data.pulse.india_bias === 'Cautionary' ? 'text-warning' : 'text-foreground'
           )}>
             {data.pulse.india_bias}
           </span>
@@ -83,15 +83,15 @@ export function MarketPulseWidget({ compact = false }: MarketPulseWidgetProps) {
       <div className="space-y-4">
         {/* Sector Summary */}
         <div>
-           <h4 className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-2 border-b border-slate-800 pb-1">
+           <h4 className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-2 border-b border-border pb-1">
              Top Sectors
            </h4>
            <div className="flex gap-2">
              {displaySectors.map((s, i) => (
-               <div key={i} className="flex-1 bg-slate-800/50 p-2 rounded border-l-2" 
-                    style={{ borderLeftColor: s.score > 0 ? '#10b981' : '#ef4444' }}>
-                 <div className="text-[9px] text-slate-400 font-bold truncate uppercase">{s.sector}</div>
-                 <div className="text-xs font-bold text-white">{s.score > 0 ? '+' : ''}{s.score.toFixed(1)}</div>
+               <div key={i} className="flex-1 bg-secondary/40 p-2 rounded border-l-2" 
+                    style={{ borderLeftColor: s.score > 0 ? 'hsl(var(--success))' : 'hsl(var(--destructive))' }}>
+                 <div className="text-[9px] text-muted-foreground font-bold truncate uppercase">{s.sector}</div>
+                 <div className="text-xs font-bold text-foreground">{s.score > 0 ? '+' : ''}{s.score.toFixed(1)}</div>
                </div>
              ))}
            </div>
@@ -100,19 +100,33 @@ export function MarketPulseWidget({ compact = false }: MarketPulseWidgetProps) {
         {/* Recent Events */}
         {!compact && (
           <div>
-            <h4 className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-2 border-b border-slate-800 pb-1">
+            <h4 className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-2 border-b border-border pb-1">
               Impending Events
             </h4>
             <div className="space-y-2">
               {displayEvents.map((e, index) => (
                 <div key={index} className="flex items-center justify-between text-xs">
-                  <span className="text-slate-300 truncate pr-2">{e.event_name}</span>
+                  <span className="text-muted-foreground truncate pr-2">{e.event_name}</span>
                   <span className={cn(
                     "font-bold uppercase text-[9px]",
-                    e.impact_level === 'High' ? 'text-red-400' : 'text-slate-500'
+                    e.impact_level === 'High' ? 'text-destructive' : 'text-muted-foreground'
                   )}>{e.impact_level}</span>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Upcoming News Tip */}
+        {!compact && data.upcoming_news && data.upcoming_news.length > 0 && (
+          <div>
+            <h4 className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-2 border-b border-border pb-1">
+              Weekly Intelligence
+            </h4>
+            <div className="bg-primary/5 border border-primary/20 p-2 rounded">
+              <p className="text-[10px] text-primary font-bold leading-tight">
+                {data.upcoming_news[0].title}
+              </p>
             </div>
           </div>
         )}

@@ -76,12 +76,12 @@ export function Navbar() {
       <header className="fixed top-0 left-0 right-0 z-50 flex flex-col font-sans">
         {/* Top Utility Bar - Hidden on scroll to save space, visible on desktop */}
         <div className={cn(
-          "bg-slate-950 text-slate-300 text-xs border-b border-white/5 transition-all duration-300 overflow-hidden",
+          "bg-background text-muted-foreground text-xs border-b border-border transition-all duration-300 overflow-hidden",
           scrolled ? "h-0 opacity-0" : "h-10 opacity-100 hidden lg:block"
         )}>
           <div className="container mx-auto px-4 h-full flex items-center justify-between">
             <div className="flex items-center gap-6">
-              <span className="font-medium text-slate-100">
+              <span className="font-medium text-slate-100" suppressHydrationWarning>
                 {format(currentDate, 'EEEE, MMMM d, yyyy')}
               </span>
               <div className="flex items-center gap-2">
@@ -108,13 +108,11 @@ export function Navbar() {
               <div className="flex items-center gap-2 pl-2">
                 {isLoggedIn ? (
                   <div className="flex items-center gap-2">
-                    <Link href="/profile">
-                      <button className="hover:text-white flex items-center gap-1.5 border border-white/10 px-2 py-1 rounded-full bg-white/5 transition-all">
+                    <Link href="/profile" className="hover:text-white flex items-center gap-1.5 border border-white/10 px-2 py-1 rounded-full bg-white/5 transition-all">
                         <span className="max-w-[80px] truncate hidden sm:inline-block font-medium">
                           {user?.name?.split(' ')[0] || user?.email?.split('@')[0]}
                         </span>
                         <User className="w-3.5 h-3.5" />
-                      </button>
                     </Link>
                     <button
                       onClick={handleLogout}
@@ -125,13 +123,10 @@ export function Navbar() {
                     </button>
                   </div>
                 ) : (
-                  <Link href="/login">
-                    <button className="hover:text-white"><User className="w-4 h-4" /></button>
+                  <Link href="/login" className="hover:text-white inline-flex items-center justify-center">
+                    <User className="w-4 h-4" />
                   </Link>
                 )}
-                <button className="hover:text-white" onClick={() => setSearchOpen(true)}>
-                  <Search className="w-4 h-4" />
-                </button>
               </div>
             </div>
           </div>
@@ -148,8 +143,8 @@ export function Navbar() {
             <Link href="/" className="flex items-center gap-3 group shrink-0">
               {/* Using a larger, serif-style logo presentation matching the reference image's vibe */}
               <div className="flex flex-col relative">
-                <div className="text-3xl md:text-4xl font-bold tracking-tighter leading-none text-foreground font-serif">
-                  Equi<span className="text-primary">Bharat</span>
+                <div className="text-3xl md:text-4xl font-bold tracking-tighter leading-none text-foreground font-serif transition-all">
+                  Equi<span className="text-primary italic">Bharat</span>
                 </div>
               </div>
             </Link>
@@ -176,16 +171,6 @@ export function Navbar() {
             <div className="flex items-center gap-3">
               <ModeToggle />
 
-
-              {/* Mobile Search Trigger */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="lg:hidden"
-                onClick={() => setSearchOpen(true)}
-              >
-                <Search className="w-5 h-5" />
-              </Button>
 
               {/* Mobile Menu Toggle */}
               <Button
@@ -228,17 +213,6 @@ export function Navbar() {
                 </Link>
               ))}
               <div className="pt-6 flex flex-col gap-3">
-                <Button
-                  variant="outline"
-                  className="w-full gap-2 justify-start"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    setSearchOpen(true);
-                  }}
-                >
-                  <Search className="w-4 h-4" />
-                  Search (Ctrl+K)
-                </Button>
                 {isLoggedIn ? (
                   <>
                     <div className="flex items-center gap-3 p-3 bg-secondary rounded-lg mb-2">

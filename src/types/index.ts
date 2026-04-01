@@ -73,6 +73,13 @@ export interface MarketPulseData {
     expected_value?: string;
     previous_value?: string;
   }[];
+  upcoming_news: {
+    id: string;
+    title: string;
+    summary: string;
+    published_at: string;
+    impact_level: string;
+  }[];
 }
 
 

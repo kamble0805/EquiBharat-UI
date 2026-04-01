@@ -9,11 +9,11 @@ export function Footer() {
                     {/* Brand Column */}
                     <div className="space-y-4 col-span-1 md:col-span-1">
                         <Link href="/" className="flex items-center gap-2 group">
-                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center">
                                 <TrendingUp className="w-5 h-5 text-primary" />
                             </div>
-                            <span className="text-xl font-bold tracking-tight text-foreground">
-                                Equi<span className="text-primary">Bharat</span>
+                            <span className="text-xl font-serif font-black tracking-tighter text-foreground">
+                                Equi<span className="text-primary italic">Bharat</span>
                             </span>
                         </Link>
                         <p className="text-sm text-muted-foreground leading-relaxed">

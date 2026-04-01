@@ -18,15 +18,11 @@ export async function GET(req: NextRequest) {
         }
 
         // 1. Fetch the latest general "Market Pulse" metadata
-        let query = `SELECT * FROM market_pulse_daily`;
-        let params: any[] = [];
-        if (dateParam) {
-            query += ` WHERE DATE(pulse_date) = ?`;
-            params.push(dateParam);
-        }
-        query += ` ORDER BY pulse_date DESC, created_at DESC LIMIT 1`;
-
-        const [pulseRows]: any = await pool.query(query, params);
+        const [pulseRows]: any = await pool.query(`
+            SELECT * FROM market_pulse_daily 
+            ORDER BY pulse_date DESC, created_at DESC 
+            LIMIT 1
+        `);
         
         if (pulseRows.length === 0) {
             return NextResponse.json({ 
@@ -39,26 +35,26 @@ export async function GET(req: NextRequest) {
         const data = pulseRows[0];
         const pulseDate = data.pulse_date;
 
-        // 2. Fetch sectoral aggregation from news_events for that date (or all recent if dateParam is null)
-        let sectorQuery = `
+        // 2. Calculate This Week range for sectors and events
+        const today = new Date();
+        const startOfThisWeek = new Date(today);
+        startOfThisWeek.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1)); // This Monday
+        startOfThisWeek.setHours(0, 0, 0, 0);
+
+        const endOfThisWeek = new Date(startOfThisWeek);
+        endOfThisWeek.setDate(startOfThisWeek.getDate() + 6); // Sunday
+        endOfThisWeek.setHours(23, 59, 59, 999);
+
+        // 3. Fetch sectoral aggregation from news_events for THIS WEEK
+        const [sectorRows]: any = await pool.query(`
             SELECT sector, SUM(signal_score) as score, COUNT(*) as total_signals 
             FROM news_events 
             WHERE sector IS NOT NULL AND sector != ''
-        `;
-        let sectorParams: any[] = [];
-        if (dateParam) {
-            sectorQuery += ` AND DATE(published_at) = ?`;
-            sectorParams.push(dateParam);
-        } else {
-            // If fetching latest pulse, use its date for sectors too
-            sectorQuery += ` AND DATE(published_at) = ?`;
-            sectorParams.push(new Date(pulseDate).toISOString().split('T')[0]);
-        }
-        sectorQuery += ` GROUP BY sector ORDER BY ABS(SUM(signal_score)) DESC LIMIT 12`;
+            AND published_at >= ? AND published_at <= ?
+            GROUP BY sector ORDER BY ABS(SUM(signal_score)) DESC LIMIT 12
+        `, [startOfThisWeek.toISOString().split('T')[0], endOfThisWeek.toISOString().split('T')[0]]);
 
-        const [sectorRows]: any = await pool.query(sectorQuery, sectorParams);
-
-        // 3. Map Triggers (The UI expects a list of strings, the DB has JSON objects)
+        // 4. Map Triggers
         let rawTriggers = [];
         try {
             rawTriggers = typeof data.top_triggers === 'string' ? JSON.parse(data.top_triggers) : (data.top_triggers || []);
@@ -70,17 +66,14 @@ export async function GET(req: NextRequest) {
             return t.title || t.description || JSON.stringify(t);
         });
 
-        // 4. Calculate This Week & Next Week window for Impact Timeline (Fixed 14-day window)
-        const today = new Date();
-        const startOfThisWeek = new Date(today);
-        startOfThisWeek.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1)); // This Monday
-        startOfThisWeek.setHours(0, 0, 0, 0);
-
+        // 5. Fetch Upcoming Scheduled News in this week + next week (14-day window stays for context, but user said "this week news")
+        // User asked for "this week", so let's keep the window but maybe label it or filter.
+        // Actually, "Impact Timeline" says 14-day horizon. I'll keep it 14-day but ensure it starts from startOfThisWeek.
+        
         const endOfNextWeek = new Date(startOfThisWeek);
-        endOfNextWeek.setDate(startOfThisWeek.getDate() + 13); // 2 Sundays from now (Next-Next Sunday)
+        endOfNextWeek.setDate(startOfThisWeek.getDate() + 13); // 2 Sundays from now
         endOfNextWeek.setHours(23, 59, 59, 999);
 
-        // 4. Fetch Upcoming Scheduled News in 14-day window
         const [scheduledRows]: any = await pool.query(`
             SELECT title, category, scheduled_date, scheduled_time, ingestion_link
             FROM scheduled_news 
@@ -96,6 +89,17 @@ export async function GET(req: NextRequest) {
             event_time: `${new Date(s.scheduled_date).toISOString().split('T')[0]}T${s.scheduled_time || '00:00:00'}`,
             link: s.ingestion_link
         }));
+
+        // 6. Fetch "Future Intelligence" (5 items immediately after the 14-day horizon)
+        const [upcomingNewsRows]: any = await pool.query(`
+            SELECT id, title, category as summary, scheduled_date as published_at, 
+            CASE WHEN (category LIKE '%inflation%' OR category LIKE '%rates%') THEN 'High' ELSE 'Moderate' END as impact_level
+            FROM scheduled_news 
+            WHERE scheduled_date > ?
+            AND status = 'scheduled'
+            ORDER BY scheduled_date ASC, scheduled_time ASC
+            LIMIT 5
+        `, [endOfNextWeek.toISOString().split('T')[0]]);
 
         return NextResponse.json({
             pulse: {
@@ -113,7 +117,14 @@ export async function GET(req: NextRequest) {
             })),
             events: [...mappedScheduled].sort((a, b) => 
                 new Date(a.event_time).getTime() - new Date(b.event_time).getTime()
-            )
+            ),
+            upcoming_news: upcomingNewsRows.map((n: any) => ({
+                id: n.id.toString(),
+                title: n.title,
+                summary: n.summary,
+                published_at: n.published_at,
+                impact_level: n.impact_level
+            }))
         });
     } catch (error) {
         console.error('Market Pulse API Error:', error);

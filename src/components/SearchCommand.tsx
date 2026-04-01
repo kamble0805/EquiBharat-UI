@@ -42,7 +42,7 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
 
     return (
         <CommandDialog open={open} onOpenChange={onOpenChange}>
-            <CommandInput placeholder="Search stocks, news, or change theme..." />
+            <CommandInput placeholder="Search EquiBharat Intelligence, stocks, news..." />
             <CommandList className="pb-2">
                 <CommandEmpty>
                     <div className="flex flex-col items-center justify-center py-6 text-muted-foreground text-sm">
@@ -135,8 +135,11 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
                 </CommandGroup>
             </CommandList>
 
-            <div className="border-t px-4 py-2 text-xs text-muted-foreground flex items-center justify-between bg-muted/20">
-                <span>Use arrow keys to navigate</span>
+            <div className="border-t px-4 py-2 text-[10px] text-muted-foreground flex items-center justify-between bg-muted/20">
+                <div className="flex items-center gap-2">
+                    <TrendingUp className="w-3 h-3 text-primary" />
+                    <span className="font-serif font-black uppercase tracking-widest text-[9px]">Equi<span className="italic">Bharat</span> Intelligence Hub</span>
+                </div>
                 <div className="flex items-center gap-1">
                     <span className="bg-background border rounded px-1">↵</span>
                     <span>to select</span>

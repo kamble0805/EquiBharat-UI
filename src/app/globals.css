@@ -66,60 +66,60 @@
   }
 
   .dark {
-    /* Dark Mode Overrides */
-    --background: 222 47% 6%;
-    --foreground: 210 40% 96%;
+    /* Dark Mode Overrides - Standardized Onyx Theme */
+    --background: 230 40% 3%;
+    --foreground: 210 40% 98%;
 
-    --card: 222 47% 8%;
+    --card: 230 30% 5%;
     --card-foreground: 210 40% 96%;
-    --card-elevated: 222 47% 10%;
+    --card-elevated: 230 30% 7%;
 
-    --popover: 222 47% 10%;
+    --popover: 230 30% 5%;
     --popover-foreground: 210 40% 96%;
 
-    --primary: 187 71% 45%;
-    --primary-foreground: 222 47% 6%;
+    --primary: 187 71% 50%; /* Vibrant Teal-Cyan */
+    --primary-foreground: 230 40% 3%;
 
-    --secondary: 222 35% 14%;
-    --secondary-foreground: 210 30% 80%;
+    --secondary: 230 20% 12%;
+    --secondary-foreground: 210 30% 85%;
 
-    --muted: 222 30% 16%;
-    --muted-foreground: 215 20% 55%;
+    --muted: 230 20% 10%;
+    --muted-foreground: 215 15% 55%;
 
-    --accent: 222 35% 18%;
-    --accent-foreground: 210 40% 96%;
+    --accent: 230 25% 15%;
+    --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 55% 50%;
+    --destructive: 0 70% 50%;
     --destructive-foreground: 210 40% 98%;
 
-    --success: 160 50% 40%;
-    --success-foreground: 160 50% 90%;
+    --success: 160 60% 45%;
+    --success-foreground: 160 50% 95%;
 
-    --warning: 45 80% 50%;
-    --warning-foreground: 45 80% 10%;
+    --warning: 45 90% 50%;
+    --warning-foreground: 45 90% 10%;
 
-    --border: 222 30% 18%;
-    --input: 222 30% 16%;
-    --ring: 187 71% 45%;
+    --border: 230 20% 12%;
+    --input: 230 20% 10%;
+    --ring: 187 71% 50%;
 
     /* Custom tokens for Equibharat - Dark */
-    --market-up: 160 50% 40%;
-    --market-down: 0 55% 50%;
-    --market-neutral: 215 20% 55%;
+    --market-up: 160 60% 45%;
+    --market-down: 0 70% 50%;
+    --market-neutral: 215 15% 55%;
 
-    --impact-high: 0 55% 50%;
-    --impact-medium: 45 80% 50%;
-    --impact-low: 160 50% 40%;
+    --impact-high: 0 70% 50%;
+    --impact-medium: 45 90% 50%;
+    --impact-low: 160 60% 45%;
 
-    --text-headline: 210 40% 98%;
-    --text-body: 210 30% 80%;
-    --text-muted: 215 20% 55%;
+    --text-headline: 210 40% 100%;
+    --text-body: 210 20% 85%;
+    --text-muted: 215 15% 55%;
 
-    --gradient-card: linear-gradient(135deg, hsl(222 47% 10%) 0%, hsl(222 47% 8%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(187 71% 45%) 0%, hsl(190 60% 35%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(230 40% 5%) 0%, hsl(230 40% 3%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(187 71% 50%) 0%, hsl(190 60% 40%) 100%);
 
-    --shadow-card: 0 4px 24px -4px rgba(0, 0, 0, 0.4);
-    --shadow-elevated: 0 8px 32px -8px rgba(0, 0, 0, 0.5);
+    --shadow-card: 0 4px 24px -4px rgba(0, 0, 0, 0.6);
+    --shadow-elevated: 0 8px 32px -8px rgba(0, 0, 0, 0.8);
   }
 }
 
