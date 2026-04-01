@@ -46,7 +46,7 @@ const TermsConditions = () => {
                     </section>
 
                     <div className="pt-8 border-t border-border mt-8">
-                        <p className="text-sm">Last updated: {new Date().toLocaleDateString()}</p>
+                        <p className="text-sm" suppressHydrationWarning>Last updated: {new Date().toLocaleDateString()}</p>
                     </div>
                 </div>
             </div>

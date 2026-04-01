@@ -24,9 +24,15 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const { toast } = useToast();
   const currentDate = new Date();
+
+  // Handle client hydration
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Handle scroll effect
   useEffect(() => {
@@ -81,8 +87,8 @@ export function Navbar() {
         )}>
           <div className="container mx-auto px-4 h-full flex items-center justify-between">
             <div className="flex items-center gap-6">
-              <span className="font-medium text-slate-100" suppressHydrationWarning>
-                {format(currentDate, 'EEEE, MMMM d, yyyy')}
+              <span className="font-medium text-slate-100 min-w-[140px] inline-block">
+                {mounted ? format(currentDate, 'EEEE, MMMM d, yyyy') : 'Loading date...'}
               </span>
               <div className="flex items-center gap-2">
                 <CloudSun className="w-3.5 h-3.5" />

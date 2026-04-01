@@ -90,7 +90,7 @@ export function Footer() {
                 </div>
 
                 <div className="pt-8 mt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-muted-foreground">
-                    <p>© {new Date().getFullYear()} EquiBharat. All rights reserved.</p>
+                    <p suppressHydrationWarning>© {new Date().getFullYear()} EquiBharat. All rights reserved.</p>
                     <p className="flex items-center gap-1">
                         Made with <span className="text-destructive">❤</span> in India
                     </p>
