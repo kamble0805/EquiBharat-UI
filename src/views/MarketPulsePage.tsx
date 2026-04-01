@@ -20,6 +20,12 @@ const StatusGauge = ({ label, value, colorClass }: { label: string, value: strin
 );
 
 const MarketPulsePage = () => {
+  const [mounted, setMounted] = useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const { data: pulseData, isLoading, isError } = useQuery<MarketPulseData>({
     queryKey: ['marketPulse'],
     queryFn: async () => {
@@ -28,6 +34,8 @@ const MarketPulsePage = () => {
       return res.json();
     },
   });
+
+  if (!mounted) return null;
 
   if (isLoading) {
     return (
